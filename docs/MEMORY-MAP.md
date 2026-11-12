@@ -19,7 +19,12 @@ PS1 0x801908CC, 21 units of 0x1C0 bytes; the remaster's are 0x200 bytes each, in
 | +0x21–0x26 | +7 | EXP, level, Brave, Faith |
 | +0x28–0x4D | +8 | HP, MP, stats, CT, Move, Jump, X (+0x47), Y, level, equip types (the remaster has a fifth at +0x56) |
 | +0x4E–0x71 | +9 | innate statuses, immunities, statuses, their counters, elements |
+| +0x72–0x80 | +9 | raw HP, MP, Speed, PA, MA, 3 bytes each |
 | +0x8B–0x95 | +9 | reactions, supports, movement abilities |
+| +0x96–0xD1 | +9 | unlocked jobs, then learned abilities: 3 bytes for each of the PS1's 19 jobs with abilities (the remaster has 22; the first 19 are the same jobs) |
+| +0xD2–0xDB | +0x12 | job levels, a nibble a job, the even index in the high nibble |
+| +0xDC–0x103 | +0xF0 on | JP by job, 20 halfwords (the remaster has 23; Squire to Mime are the first 20 in both). A JP written stops at 9999 |
+| +0x104–0x12B | +0x11E on | total JP by job, 20 halfwords |
 | +0x12C–0x13B | (+0x14C, UTF-8) | the name, in the PS1's character set; once it's written whole (its 0xFE or 0xFF end) it's written over the remaster's UTF-8 name |
 | +0x15C–0x162 | +0x30 | +0x15E–0x160 the job's graphic, portrait and palette, +0x161 the battle data's unit id, +0x162 the job's skillset |
 | +0x163 | +0x194 | (a halfword in the remaster) |
@@ -28,7 +33,8 @@ PS1 0x801908CC, 21 units of 0x1C0 bytes; the remaster's are 0x200 bytes each, in
 | +0x182–0x18C | +0x32 | |
 | +0x1B8–0x1BF | +0x34 | +0x1B8 and +0x1B9 cleared with the turn's flags; +0x1BA the base team (read only: see below); the second status copy |
 
-Anything else in a unit isn't mapped yet.
+Those from +0x72 to +0x12B are what a unit build copies from its roster slot (the PS1's SCUS 0x8005B1EC, the
+remaster's 0x276758), so they line up as the roster's do. Anything else in a unit isn't mapped yet.
 
 **Read only:** a unit's base team (PS1 +0x1BA, the remaster's +0x1EE, the team it plays by). An event that clears it
 (as ReMixed's random battles' setup does to every unit it counts) would leave the remaster's battle with no enemies,

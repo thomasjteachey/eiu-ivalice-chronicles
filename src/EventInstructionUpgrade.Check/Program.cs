@@ -77,7 +77,13 @@ internal static unsafe class SelfTest
         var fields = string.Join(" ", new[] { 0x4B, 0x4E, 0x53, 0x58, 0x6D, 0x71, 0x15C, 0x15E, 0x162, 0x1B8, 0x1B9, 0x163, 0xF8 }
             .Select(o => $"{o:X}:{(Ps1Memory.UnitField(o) is var r and >= 0 ? r.ToString("X") : "-")}"));
         Check($"PS1 unit fields mapped: {fields}",
-              fields == "4B:53 4E:57 53:5C 58:61 6D:76 71:7A 15C:18C 15E:18E 162:192 1B8:1EC 1B9:1ED 163:194 F8:-");
+              fields == "4B:53 4E:57 53:5C 58:61 6D:76 71:7A 15C:18C 15E:18E 162:192 1B8:1EC 1B9:1ED 163:194 F8:10C");
+        // The fields the unit build copies from the roster (SCUS 0x8005B1EC, the remaster's 0x276758): raw stats, jobs and
+        // abilities, job levels, JP and total JP, each range's ends, and a gap.
+        var copied = string.Join(" ", new[] { 0x72, 0x80, 0x81, 0x96, 0x99, 0xD1, 0xD2, 0xDB, 0xDC, 0x103, 0x104, 0x12B }
+            .Select(o => $"{o:X}:{(Ps1Memory.UnitField(o) is var r and >= 0 ? r.ToString("X") : "-")}"));
+        Check($"PS1 unit fields copied from the roster mapped: {copied}",
+              copied == "72:7B 80:89 81:- 96:9F 99:A2 D1:DA D2:E4 DB:ED DC:F0 103:117 104:11E 12B:145");
         var musicAt = EventHooks.Music(game.Image);
         var musicPlaces = $"0x{musicAt.Fd4 - game.Image.ImageStart:X} 0x{musicAt.Fd6 - game.Image.ImageStart:X} "
                           + $"0x{musicAt.Fd8 - game.Image.ImageStart:X}, 0x{musicAt.Play - game.Image.ImageStart:X}";
@@ -162,7 +168,7 @@ internal static unsafe class SelfTest
             0xAE, 0x72, 0x00, 0x34, 0x12,              // var 0x72 = 0x1234
             0xE6, 0x42, 0x72,                          // AlterParameter: 2 bytes at parameter 2
             0xAE, 0x16, 0x00, 0x00, 0x00,              // becomes var 0x16 = 0x1234
-            0xC1, 0x17, 0x00, 0x01, 0x70, 0x01,        // LoadAddress PS1 +0x100: not mapped
+            0xC1, 0x17, 0x40, 0x01, 0x70, 0x01,        // LoadAddress PS1 +0x140: not mapped
             0xAC, 0x18, 0x00, 0x01, 0x00,              // LUI var 0x18 = 0x10000
             0xAC, 0x1A, 0x00, 0x19, 0x80,              // var 0x1A = 0x80190000
             0xC4, 0x72, 0x44, 0x38, 0x1A, 0x02,        // SaveAddress 0x1234 at PS1 0x80193844 (a mapped global)
@@ -322,6 +328,13 @@ internal static unsafe class SelfTest
         var jp = $"{*(ushort*)(slot2 + Ps1Memory.RemasterJpAt + 6)} {*(ushort*)(slot2 + Ps1Memory.RemasterTotalJpAt + 6)}";
         Check($"a roster unit's JP for job index 3 written as the PS1 has it (10040, then a total of 1234): {jp} in the "
               + $"remaster's, read back {named.Read(jpAt, 2)}", jp == "9999 1234" && named.Read(jpAt, 2) == 9999);
+        // The same for a battle unit's (PS1 +0xDC and +0x104, the remaster's +0xF0 and +0x11E).
+        var unitJpAt = Ps1Memory.Units + 3 * Ps1Memory.UnitSize + Ps1Memory.UnitJpAt + 6;
+        named.Write(unitJpAt, 2, 9990 + 50);
+        named.Write(unitJpAt + (Ps1Memory.UnitTotalJpAt - Ps1Memory.UnitJpAt), 2, 1234);
+        var unitJp = $"{*(ushort*)(unit3 + Ps1Memory.RemasterUnitJpAt + 6)} {*(ushort*)(unit3 + Ps1Memory.RemasterUnitTotalJpAt + 6)}";
+        Check($"a battle unit's JP for job index 3 written as the PS1 has it (10040, then a total of 1234): {unitJp} in the "
+              + $"remaster's, read back {named.Read(unitJpAt, 2)}", unitJp == "9999 1234" && named.Read(unitJpAt, 2) == 9999);
         foreach (var p in new nint[] { (nint)cell, (nint)table, (nint)marked, (nint)other, (nint)code, (nint)units, (nint)roster })
             System.Runtime.InteropServices.NativeMemory.Free((void*)p);
         return failures;

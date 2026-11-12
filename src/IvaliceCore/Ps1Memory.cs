@@ -73,6 +73,10 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
     /// ReMixed's Treasure Wheel adds its cash-in with no cap.</summary>
     internal const int JpAt = 0x6E, TotalJpAt = 0x96, PsJobs = 20, RemasterJpAt = 0x80, RemasterTotalJpAt = 0xAE,
                        MostJp = 9999;
+    /// <summary>A battle unit's JP by job and its totals (PS1 +0xDC and +0x104, 20 halfwords each, copied from the
+    /// roster's by the PS1's unit build, SCUS 0x8005B1EC) and the remaster's (+0xF0 and +0x11E, 23 each, from its roster's
+    /// by 0x276758). Squire to Mime are 0-19 in both; a JP written there stops at 9999 too.</summary>
+    internal const int UnitJpAt = 0xDC, UnitTotalJpAt = 0x104, RemasterUnitJpAt = 0xF0, RemasterUnitTotalJpAt = 0x11E;
     /// <summary>A battle unit's name in the PS1's layout (+0x12C, 16 bytes, as a roster unit's); the remaster keeps it as
     /// UTF-8 at +0x14C (0x40 bytes, from the roster's by its unit build, 0x276758). A write there (Be A Beta names its
     /// beta testers so, 0x0C6) is kept in the mod's store and the name written over the remaster's, which it shows for
@@ -142,7 +146,13 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
         >= 0x28 and <= 0x4D => offset + 8,                // HP, MP, stats, CT, Move, Jump, X, Y, level, equip types
         >= 0x4E and <= 0x71 => offset + 9,                // innate statuses, immunities, statuses, their counters,
                                                            // elements (the remaster's 5th equip type byte is +0x56)
+        >= 0x72 and <= 0x80 => offset + 9,                // raw HP, MP, Speed, PA, MA (3 bytes each)
         >= 0x8B and <= 0x95 => offset + 9,                // reactions, supports, movement
+        >= 0x96 and <= 0xD1 => offset + 9,                // unlocked jobs; learned abilities (3 bytes for each of the
+                                                           // PS1's 19 jobs with abilities; the remaster has 22)
+        >= 0xD2 and <= 0xDB => offset + 0x12,             // job levels, a nibble a job (the even index high)
+        >= UnitJpAt and < UnitJpAt + 2 * PsJobs => offset - UnitJpAt + RemasterUnitJpAt,                 // JP by job
+        >= UnitTotalJpAt and < UnitTotalJpAt + 2 * PsJobs => offset - UnitTotalJpAt + RemasterUnitTotalJpAt, // total JP
         >= 0x15C and <= 0x162 => offset + 0x30,            // +0x15E–0x160 the job's graphic, portrait, palette;
                                                            // +0x161 the battle data's unit id; +0x162 the job's skillset
         0x163 => 0x194,                                    // widened to a halfword in the remaster (the setup clears it
@@ -259,9 +269,10 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
     private static bool IsName(uint address) =>
         address - Roster < RosterSlots * RosterSize && (address - Roster) % RosterSize - (uint)NameAt < (uint)NameLength;
 
-    /// <summary>A roster unit's JP or total JP (<see cref="JpAt"/>).</summary>
+    /// <summary>A roster unit's or a battle unit's JP or total JP (<see cref="JpAt"/>, <see cref="UnitJpAt"/>).</summary>
     private static bool IsJp(uint address) =>
-        address - Roster < RosterSlots * RosterSize && (address - Roster) % RosterSize - (uint)JpAt < 4u * PsJobs;
+        address - Roster < RosterSlots * RosterSize && (address - Roster) % RosterSize - (uint)JpAt < 4u * PsJobs
+        || address - Units < UnitCount * UnitSize && (address - Units) % UnitSize - (uint)UnitJpAt < 4u * PsJobs;
 
     /// <summary>Noted once per unit field, roster field or other address.</summary>
     private void Missing(uint address, string what)
