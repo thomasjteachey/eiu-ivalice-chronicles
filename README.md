@@ -39,6 +39,9 @@ Reloaded-II as well.
 
 ## For modders
 
+- **Event tools:** [docs/EVENT-TOOLS.md](docs/EVENT-TOOLS.md): `tools/eiu.py` turns events into readable scripts
+  (the wiki's instruction names, one a line) and back, and brings a PS1 hack's events over: its disc from its PPF
+  patch, a report of what its events need, and each event converted, with its text as numbered lines. Python only.
 - **Writing events for it:** [docs/WRITING-EVENTS.md](docs/WRITING-EVENTS.md): the marker, where the files go, the
   remaster's message layout, the variables, an example.
 - **Building a mod on it:** [docs/API.md](docs/API.md): `IEventInstructions`, which the mod exports to the mods that
@@ -76,6 +79,8 @@ src/EventInstructionUpgrade.Interfaces/  IEventInstructions, the API other mods 
 src/IvaliceCore/                         what the upgrade is built on: the exe searched by byte patterns, hooks, the
                                          battle units and roster, the PS1 memory map, unit making
 src/EventInstructionUpgrade.Check/       the offline check
+tools/eiu.py, tools/eiu_events/          the event tools: scripts, PS1 events converted, discs and patches
+tests/                                   the event tools' tests (python -I -m unittest discover -s tests)
 mod/ModConfig.json                       the mod's Reloaded-II config
 build.py                                 builds, checks, installs and zips the mod
 docs/                                    the documentation

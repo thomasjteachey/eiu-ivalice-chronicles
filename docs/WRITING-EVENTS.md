@@ -1,5 +1,8 @@
 # Writing events for the upgrade
 
+The easy way to write one is as a script, by instruction names, built with `tools/eiu.py build`
+([EVENT-TOOLS.md](EVENT-TOOLS.md)). This page is what the game and the upgrade expect of the result.
+
 ## Where an event goes
 
 The remaster reads event `N` from `script/enhanced/eventNNN.e` (`NNN` the event's number in decimal, three digits).
@@ -76,6 +79,23 @@ registered it's passed over. `LoadConditionals` (0xCE) loads battle event condit
 (`SetConditionals`). See [API.md](API.md).
 
 ## An example
+
+As a script ([EVENT-TOOLS.md](EVENT-TOOLS.md)):
+
+```
+UnitAddress(0x85, 0x70)                 # var 0x70 = the battle unit with battle id 0x85
+LoadAddress(0x00, 0x0024, 0x70, 1)      # var 0 = its Brave
+SET(0x0001, 70)
+GTE()                                   # var 0 = var 0 >= var 1
+If()
+    SET(0x0010, 1)
+Else()
+    SET(0x0010, 2)
+EndIf()
+EventEnd()
+```
+
+and the bytes `build` makes of it:
 
 ```
 0E 2C 0E 3C              the marker
