@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    What the remaster's mods here share: the exe mapped and searched, hooks and code caves,
+    the log, the battle's units and routines, and the PS1's memory as the remaster lays it
+    out. The Event Instruction Upgrade is built on it, and so is a mod that compiles it in
+    (Ivalice ReMixed does): each ships a copy, and Reloaded-II loads each mod's own, so
+    nothing here is shared between them at run time (what they share goes through
+    EventInstructionUpgrade.Interfaces). Its types are internal: a mod that compiles it in
+    adds its assembly name to the InternalsVisibleTo list below.
+
+    Reloaded-II supplies Reloaded.Mod.Interfaces, and the shared hooks mod
+    (reloaded.sharedlib.hooks) the Reloaded.Hooks interfaces, so they're referenced from
+    your Reloaded-II install and not copied. build.py passes ReloadedDir and
+    ReloadedModsDir.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>IvaliceCore</AssemblyName>
+    <RootNamespace>IvaliceCore</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ReloadedDir Condition="'$(ReloadedDir)' == ''">$(RELOADEDII)</ReloadedDir>
+    <ReloadedModsDir Condition="'$(ReloadedModsDir)' == ''">$(ReloadedDir)\Mods</ReloadedModsDir>
+    <HooksDir>$(ReloadedModsDir)\reloaded.sharedlib.hooks\x64</HooksDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Reloaded.Mod.Interfaces">
+      <HintPath>$(ReloadedDir)\Loader\X64\Reloaded.Mod.Interfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Reloaded.Hooks.Definitions">
+      <HintPath>$(HooksDir)\Reloaded.Hooks.Definitions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Reloaded.Hooks.ReloadedII.Interfaces">
+      <HintPath>$(HooksDir)\Reloaded.Hooks.ReloadedII.Interfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EventInstructionUpgrade" />
+    <InternalsVisibleTo Include="EventInstructionUpgrade.Check" />
+    <!-- Ivalice ReMixed, built on the upgrade, and its offline check. -->
+    <InternalsVisibleTo Include="IvaliceRemixed" />
+    <InternalsVisibleTo Include="IvaliceRemixed.Check" />
+  </ItemGroup>
+
+  <Target Name="CheckReloadedDir" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ReloadedDir)\Loader\X64\Reloaded.Mod.Interfaces.dll')"
+           Text="Set ReloadedDir to your Reloaded-II folder (build with build.py, or pass -p:ReloadedDir=...)." />
+    <Error Condition="!Exists('$(HooksDir)\Reloaded.Hooks.Definitions.dll')"
+           Text="Install Reloaded-II's shared hooks mod (reloaded.sharedlib.hooks; the FFT mod loader depends on it), or pass -p:ReloadedModsDir=..." />
+  </Target>
+
+</Project>

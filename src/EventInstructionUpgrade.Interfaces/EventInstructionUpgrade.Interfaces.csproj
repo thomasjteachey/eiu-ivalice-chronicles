@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Event Instruction Upgrade's API, for mods whose events use its instructions. The
+    EventInstructionUpgrade mod exports it (Reloaded-II shares this assembly between mods);
+    a mod gets the interpreter with loader.GetController<IEventInstructions>() and lists
+    the mod in its ModDependencies.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>EventInstructionUpgrade.Interfaces</AssemblyName>
+    <RootNamespace>EventInstructionUpgrade.Interfaces</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

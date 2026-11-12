@@ -1,0 +1,8 @@
+bin/
+obj/
+out/
+*.user
+.vs/
+__pycache__/
+# Game data never goes in this repo (the words file is BATTLE.BIN's bytes).
+*.bin

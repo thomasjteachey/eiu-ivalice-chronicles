@@ -1,0 +1,28 @@
+{
+  "ModId": "fftivc.utility.eventinstructionupgrade",
+  "ModName": "Event Instruction Upgrade",
+  "ModAuthor": "Xifanie (the PS1 hack); eiu-ivalice-chronicles port (unofficial)",
+  "ModVersion": "1.0.0",
+  "ModDescription": "Xifanie's Event Instruction Upgrade for The Ivalice Chronicles (enhanced): event scripts with If and Switch, subroutines, 32-bit variables, the PS1's memory (LoadAddress, SaveAddress), AlterParameter, GenerateUnit and more. Runs only events marked for it; needed by mods whose events use it, such as Ivalice ReMixed. An unofficial port.",
+  "ModDll": "EventInstructionUpgrade.dll",
+  "ModIcon": "",
+  "ModR2RManagedDll32": "",
+  "ModR2RManagedDll64": "",
+  "ModNativeDll32": "",
+  "ModNativeDll64": "",
+  "Tags": [
+    "Library"
+  ],
+  "CanUnload": false,
+  "HasExports": true,
+  "IsLibrary": false,
+  "ReleaseMetadataFileName": "fftivc.utility.eventinstructionupgrade.ReleaseMetadata.json",
+  "IsUniversalMod": false,
+  "ModDependencies": [
+    "reloaded.sharedlib.hooks"
+  ],
+  "OptionalDependencies": [],
+  "SupportedAppId": [
+    "fft_enhanced.exe"
+  ]
+}
