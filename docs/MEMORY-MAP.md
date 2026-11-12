@@ -48,14 +48,16 @@ PS1 0x80057F74, 20 slots of 0x100 bytes; the remaster's slots are 0x258 bytes an
 |---|---|---|
 | +0x00–0x0D | the same | sprite set, slot, ids, job, … |
 | +0x0E–0x14 | +0x0E + 2 × (n − 0x0E) | equipment (the low bytes of the remaster's halfwords) |
-| +0x15–0x66 | +7 | EXP, level (+0x16), Brave, Faith, raw stats, unlocked jobs, learned abilities of the PS1's 20 jobs |
+| +0x15–0x63 | +7 | EXP, level (+0x16), Brave, Faith, raw stats, unlocked jobs, learned abilities (19 sets of 3 bytes from +0x2B, the PS1's jobs with abilities) |
+| +0x64–0x6D | +0x10 | job levels, a nibble a job, the even index in the high nibble (the remaster keeps 12 bytes from +0x74, after its 22 ability sets) |
 | +0x6E–0x95 | +0x80 on | JP by job, 20 halfwords (the remaster has 23; Squire to Mime are the first 20 in both). A JP written stops at 9999, as the remaster's own JP add does |
 | +0x96–0xBD | +0xAE on | total JP by job, 20 halfwords |
 | +0xBE–0xCD | (+0xDC, UTF-8) | the name, as a battle unit's |
 | +0xCE–0xCF | +0x230 | the name id (to be confirmed) |
 | +0xD0 | +0x11E | the errand byte |
 
-The job levels after the learned abilities are laid out otherwise in the remaster (22 jobs) and aren't mapped.
+The remaster has more jobs (22 with abilities, 23 with JP); Squire to Mime are the first 20 in both, so each PS1 table
+maps onto the start of the remaster's.
 
 ## Globals
 

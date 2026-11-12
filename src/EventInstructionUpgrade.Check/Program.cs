@@ -103,12 +103,12 @@ internal static unsafe class SelfTest
         var (setsAt, recordsAt) = EventTables.ConditionTables(game.Image);
         Check($"LoadConditionals' tables: the condition sets at 0x{setsAt - game.Image.ImageStart:X}, the records at 0x{recordsAt - game.Image.ImageStart:X}",
               setsAt - game.Image.ImageStart == 0xD40040 && recordsAt - game.Image.ImageStart == 0xD3F550);
-        var rosterFields = string.Join(" ", new[] { 0x0D, 0x0E, 0x14, 0x15, 0x16, 0x17, 0x19, 0x2B, 0x66, 0x67, 0x6D, 0x6E, 0x7A,
+        var rosterFields = string.Join(" ", new[] { 0x0D, 0x0E, 0x14, 0x15, 0x16, 0x17, 0x19, 0x2B, 0x63, 0x64, 0x66, 0x67, 0x6D, 0x6E, 0x7A,
                                                      0x95, 0x96, 0xBD, 0xBE, 0xD0 }
             .Select(o => $"{o:X}:{(Ps1Memory.RosterField(o) is var r and >= 0 ? r.ToString("X") : "-")}"));
         var unitEquipment = $"{Ps1Memory.UnitField(0x1A):X} {Ps1Memory.UnitField(0x20):X} {Ps1Memory.UnitField(0x21):X}";
         Check($"PS1 roster fields mapped (the remaster's equipment is halfwords: +7 from EXP): {rosterFields}; a battle unit's equipment {unitEquipment}",
-              rosterFields == "D:D E:E 14:1A 15:1C 16:1D 17:1E 19:20 2B:32 66:6D 67:- 6D:- 6E:80 7A:8C 95:A7 96:AE BD:D5 BE:- D0:11E"
+              rosterFields == "D:D E:E 14:1A 15:1C 16:1D 17:1E 19:20 2B:32 63:6A 64:74 66:76 67:77 6D:7D 6E:80 7A:8C 95:A7 96:AE BD:D5 BE:- D0:11E"
               && unitEquipment == "1A 26 28");
         var settingsAt = game.Image.FindUnique(EventTables.MapSettingsPattern);
         Check($"the per-event map settings (PostEvent's table) at 0x{*(int*)(settingsAt + 21):X}", *(int*)(settingsAt + 21) == 0xD3F950);

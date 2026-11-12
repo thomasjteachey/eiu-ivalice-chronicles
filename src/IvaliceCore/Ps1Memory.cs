@@ -176,7 +176,10 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
     {
         < 0x0E => offset,
         >= 0x0E and <= 0x14 => 0x0E + 2 * (offset - 0x0E), // equipment: the low bytes of the remaster's halfwords
-        >= 0x15 and <= 0x66 => offset + 7,                // EXP, level, Brave, Faith, raw stats, jobs, abilities
+        >= 0x15 and <= 0x63 => offset + 7,                // EXP, level, Brave, Faith, raw stats, unlocked jobs,
+                                                           // learned abilities (19 sets of 3 bytes from +0x2B)
+        >= 0x64 and <= 0x6D => offset + 0x10,             // job levels, a nibble a job, the even index high (the
+                                                           // remaster's 12 bytes from +0x74, after its 22 sets)
         >= JpAt and < JpAt + 2 * PsJobs => offset - JpAt + RemasterJpAt,                  // JP by job
         >= TotalJpAt and < TotalJpAt + 2 * PsJobs => offset - TotalJpAt + RemasterTotalJpAt, // total JP by job
         0xCE or 0xCF => offset - 0xCE + 0x230,             // the name id (to be confirmed)
