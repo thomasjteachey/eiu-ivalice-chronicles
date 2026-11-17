@@ -12,8 +12,10 @@ namespace EventInstructionUpgrade;
 /// the low, a bit clear while held; Steam Input fills it from a controller) together with the remaster's input action
 /// for each button, as its own screens read their keys (the UI's action check 0x0F0D00, on the input state
 /// [0x3CD9EE8] + 8: the keyboard's keys and the pad's buttons through the game's key settings; its action test
-/// 0x0FC598 goes there for button 0, but says no outright in the input mode the PC's test runs are in), and pressed is
-/// what's held now and wasn't the frame before.
+/// 0x0FC598 goes there for button 0, but says no outright in the input mode the PC's test runs are in). When an action
+/// reports a button, it replaces the raw pad bits in that button group: on the Steam Deck the physical A button can
+/// appear as raw PS1 Cross while the remaster maps it to Confirm/Circle, and combining both as 0x60 matches neither
+/// choice in ReMixed's dispatch-tavern picker. Pressed is what's held now and wasn't the frame before.
 /// </summary>
 internal static unsafe class Ps1Pad
 {
@@ -28,6 +30,7 @@ internal static unsafe class Ps1Pad
         (0x0100, 0x20), (0x0800, 0x1F),                                  // select, start
         (0x0004, 0x2B), (0x0008, 0x2C),                                  // L1, R1
     ];
+    private static readonly uint[] ActionGroups = [0xF000, 0x00F0, 0x0900, 0x000C]; // directions, face, system, L1/R1
 
     // The battle frame (0x37FB7C): sub rsp, 0x28; mov rax, [second pad]; mov rcx, [first pad]; mov edx, [held];
     // mov [held before], edx; movzx r8d, byte [rax+2].
@@ -83,16 +86,28 @@ internal static unsafe class Ps1Pad
     /// <summary>The PS1 buttons held now: the pad's record and the remaster's actions.</summary>
     internal static uint Held()
     {
-        uint held = 0;
         var pad = _firstPad == null ? 0 : *_firstPad;
         if (pad == 0)  // not the running game (the offline check's copy: its globals are empty)
             return 0;
-        held |= ~(uint)(*(byte*)(pad + 2) << 8 | *(byte*)(pad + 3)) & 0xFFFF;
+        var raw = ~(uint)(*(byte*)(pad + 2) << 8 | *(byte*)(pad + 3)) & 0xFFFF;
+        uint actions = 0;
         var input = _input == null ? 0 : *_input;
         if (_check != null && input != 0)
             foreach (var (bit, action) in Actions)
                 if (_check(input + 8, action) != 0)
-                    held |= (uint)bit;
+                    actions |= (uint)bit;
+        return Normalize(raw, actions);
+    }
+
+    /// <summary>Use the remaster's configured actions for any group in which it reports input, and the raw pad for
+    /// groups it doesn't. This keeps the raw fallback that the PC needs without turning one remapped Deck button into
+    /// two mutually exclusive PS1 buttons.</summary>
+    internal static uint Normalize(uint raw, uint actions)
+    {
+        var held = raw | actions;
+        foreach (var group in ActionGroups)
+            if ((actions & group) != 0)
+                held = (held & ~group) | (actions & group);
         return held;
     }
 }

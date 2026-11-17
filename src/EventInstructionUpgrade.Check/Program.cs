@@ -100,6 +100,12 @@ internal static unsafe class SelfTest
               $"0x{uiCheck - game.Image.ImageStart:X} on [0x{inputState - game.Image.ImageStart:X}], {Ps1Pad.Actions.Length} buttons",
               frameAt == 0x37FB7C && padAt == 0x2E942E8 && testAt == 0xFC598 && uiCheck - game.Image.ImageStart == 0xF0D00
               && inputState - game.Image.ImageStart == 0x3CD9EE8 && Ps1Pad.Actions.Length == 12);
+        var deckConfirm = Ps1Pad.Normalize(0x0040, 0x0020);
+        var fallback = Ps1Pad.Normalize(0x8848, 0);
+        var mixed = Ps1Pad.Normalize(0x8948, 0x1024);
+        Check($"the remaster's mapped buttons replace conflicting raw pad groups: Deck confirm 0x{deckConfirm:X4}, " +
+              $"raw fallback 0x{fallback:X4}, mixed 0x{mixed:X4}",
+              deckConfirm == 0x0020 && fallback == 0x8848 && mixed == 0x1924);
         var (setsAt, recordsAt) = EventTables.ConditionTables(game.Image);
         Check($"LoadConditionals' tables: the condition sets at 0x{setsAt - game.Image.ImageStart:X}, the records at 0x{recordsAt - game.Image.ImageStart:X}",
               setsAt - game.Image.ImageStart == 0xD40040 && recordsAt - game.Image.ImageStart == 0xD3F550);
