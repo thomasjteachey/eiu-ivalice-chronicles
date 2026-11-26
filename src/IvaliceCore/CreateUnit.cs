@@ -83,7 +83,10 @@ internal static unsafe class CreateUnit
             FromParameters(record, s3);
             return (true, source);
         }
-        var left = 0x13; // the search's other slots
+        // The search's other slots: the PS1's 0x13 more, here every slot of the remaster's (its guests are in its last
+        // four, and a big party goes past the PS1's 20), each at its PS1 address (Ps1Memory.RosterAddress).
+        var left = UnitTables.RosterSlots - 1;
+        var searched = 0;
         if ((flags & 2) != 0)
         {
             if ((s3 & 0x300) != 0)
@@ -103,7 +106,7 @@ internal static unsafe class CreateUnit
         {
             if (left-- <= 0)
                 return (false, 0);
-            source += Ps1Memory.RosterSize;
+            source = Ps1Memory.RosterAddress(++searched);
         }
         FromRoster(record, source, p[6], flags, read);
         return (true, source);
@@ -301,9 +304,8 @@ internal static unsafe class CreateUnit
             var sprite = memory.Read(source, 1);
             if (sprite >= 0x90)
                 unit[UnitGraphic] = (byte)Graphic(sprite, memory.Read(source + 4, 1));
-            if (source - Ps1Memory.Roster < Ps1Memory.RosterSlots * Ps1Memory.RosterSize)
+            if (Ps1Memory.RosterSlot(source) is >= 0 and var rosterSlot)
             {
-                var rosterSlot = (source - Ps1Memory.Roster) / Ps1Memory.RosterSize;
                 new ReadOnlySpan<byte>(roster + rosterSlot * UnitTables.RosterSize + RosterName, NameBytes).CopyTo(name);
                 from = $"roster slot {rosterSlot}";
             }

@@ -62,7 +62,7 @@ by the mod (the remaster's variables stop at 0x3FF); see [WRITING-EVENTS.md](WRI
 | 0xC1 | LoadAddress | 5 (var, u16 offset, base var, length) | runs | var = the 1–4 bytes at [base var] + offset, a PS1 address; nothing when the base is −1 |
 | 0xC4 | SaveAddress | 5 (var, u16 offset, base var, length) | runs | the 1–4 bytes at [base var] + offset = var |
 | 0xC2 | UnitAddress | 2 (id, var) | runs | var = the PS1 address of the battle unit with that battle id (+0x161), else that sprite set (+0x00), else 0 |
-| 0xC3 | WorldUnitAddress | 2 (id, var) | runs | var = the PS1 address of the roster slot with that sprite set or name id, else 0 |
+| 0xC3 | WorldUnitAddress | 2 (id, var) | runs | var = the PS1 address of the roster slot with that sprite set or name id, else 0. All 54 of the remaster's slots are looked at; one past the PS1's 20 (a guest's, 50–53) answers the upgrade's own address for it ([MEMORY-MAP.md](MEMORY-MAP.md)) |
 | 0xE6 | AlterParameter | 2 (spec, var) | runs | writes (spec >> 6) + 1 bytes of the var into the next instruction (past other AlterParameters), at its parameter offset spec & 0x3F |
 | 0xE7 | GetTileUnit | 3 (x, y, level) | runs | var 0 = the PS1 address of the unit on that tile, else 0 |
 | 0xE8 | LoadTileData | 5 (var, byte, x, y, level) | runs | var = that byte (0–7) of the map tile |
@@ -75,7 +75,7 @@ PS1 addresses go through a map of the remaster's memory: [MEMORY-MAP.md](MEMORY-
 | Op | Name | Bytes | Here | What it does |
 |---|---|---|---|---|
 | 0xE0 | GenerateUnit | 12 | runs | makes a battle unit in slot p3 from a battle-data record built from its parameters, from a roster slot or from another unit, the way the remaster's battle setup makes a battle's units; the event then shows it with vanilla's add-unit instructions. A mod sees the record's preset byte (+0x25) through `OnUnitPreset` |
-| 0xC7 | RosterHasUnit | 3 (flags, u16 id) | runs | var 0 = whether the roster has the character (flag 0x80; by name id with flag bit 0, else by sprite set). The PS1's second list (flag 0x40) isn't mapped |
+| 0xC7 | RosterHasUnit | 3 (flags, u16 id) | runs | var 0 = whether the roster has the character (flag 0x80; by name id with flag bit 0, else by sprite set), in any of the remaster's 54 slots, guests included. The PS1's second list (flag 0x40) isn't mapped |
 | 0x8D | Inventory | 3 (op, item, value) | runs | the high nibble of op picks what's counted (2: owned and equipped; 3: the Poachers' Den, **not run**; others: owned), the low nibble what's done: 0–4 compare with the value into var 0 (=, ≤, ≥, <, >), 6/7 add or take away the value, 8 the count into var value, 9/A/B set, add or take away var value. Counts stop at 99 with the equipped ones |
 | 0xC5 | UpdateUnit | 2 | not yet | |
 | 0xC6 | TransformUnit | 3 (var, flags, job) | not yet | on the PS1: changes a unit's or roster slot's job, its equipment back to the inventory, its raw stats rescaled for the new job |

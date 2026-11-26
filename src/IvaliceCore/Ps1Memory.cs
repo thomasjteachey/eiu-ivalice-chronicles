@@ -4,7 +4,7 @@ namespace IvaliceCore;
 /// The PS1 addresses events read and write (the Event Instruction Upgrade's LoadAddress and SaveAddress, as ReMixed's
 /// events use them), in the remaster's memory: the battle units (0x801908CC, 21 ×
 /// 0x1C0; the remaster's 21 × 0x200) field by field, and the roster (0x80057F74, 20 × 0x100; the remaster's slots
-/// of 0x258), and single globals given to <see cref="Map"/>. An address with no known place is kept in a store of the
+/// of 0x258, and its slots past the PS1's 20 at <see cref="RosterMore"/>), and single globals given to <see cref="Map"/>. An address with no known place is kept in a store of the
 /// mod's own (so ReMixed's own data reads back what it wrote, as on the PS1; it starts as 0), noted once.
 /// </summary>
 internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string> note)
@@ -62,6 +62,29 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
     internal const uint ExtraWords = 0x80165EF4, ListIndex = 0x8015029A;
     internal const int ExtraWordsBytes = 0x400;
     internal const int UnitCount = 21, RosterSlots = 20;
+    /// <summary>The remaster's roster has more slots than the PS1's 20: 54, its guests in the last four (50–53), where
+    /// the PS1 keeps them in its 16–19. A slot past the PS1's has no PS1 address, so it gets one here, where no PS1
+    /// code points (past the console's memory): slot k at RosterMore + k × 0x100, laid out as a PS1 slot. The roster
+    /// lookups (<see cref="FindRoster"/>, <see cref="HasCharacter"/>, GenerateUnit's search) look through every slot
+    /// and give such a slot this address; slots 0–19 keep the PS1's own (and answer here too).</summary>
+    internal const uint RosterMore = 0x80E00000;
+
+    /// <summary>The PS1 address of a remaster roster slot: the PS1's own for its 20, <see cref="RosterMore"/>'s after.</summary>
+    internal static uint RosterAddress(int slot) =>
+        (slot < RosterSlots ? Roster : RosterMore) + (uint)slot * RosterSize;
+
+    /// <summary>The remaster roster slot a PS1 address is in (and its offset there), or −1.</summary>
+    internal static int RosterSlot(uint address, out int offset)
+    {
+        var start = address - Roster < RosterSlots * RosterSize ? Roster
+            : address - RosterMore < UnitTables.RosterSlots * RosterSize ? RosterMore
+            : 0;
+        offset = start == 0 ? -1 : (int)((address - start) % RosterSize);
+        return start == 0 ? -1 : (int)((address - start) / RosterSize);
+    }
+
+    /// <summary>The remaster roster slot a PS1 address is in, or −1.</summary>
+    internal static int RosterSlot(uint address) => RosterSlot(address, out _);
     private readonly HashSet<uint> _missing = [];
 
     /// <summary>A roster unit's name in the PS1's layout (+0xBE, 16 bytes in the game's character set, 0xFE ending it);
@@ -126,9 +149,9 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
         note($"battle unit {slot}'s name written: \"{name}\"");
     }
 
-    private void WriteName(uint slot)
+    private void WriteName(int slot)
     {
-        var start = Roster + slot * RosterSize + NameAt;
+        var start = RosterAddress(slot) + NameAt;
         var name = Name(k => _own.GetValueOrDefault(start + (uint)k));
         var bytes = System.Text.Encoding.UTF8.GetBytes(name);
         var target = new Span<byte>(roster + slot * UnitTables.RosterSize + RemasterNameAt, RemasterNameBytes);
@@ -206,17 +229,17 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
             var field = UnitField((int)((address - Units) % UnitSize));
             return field < 0 ? null : units + (address - Units) / UnitSize * Battle.UnitSize + field;
         }
-        if (address - Roster < RosterSlots * RosterSize)
+        if (RosterSlot(address, out var offset) is >= 0 and var slot)
         {
-            var field = RosterField((int)((address - Roster) % RosterSize));
-            return field < 0 ? null : roster + (address - Roster) / RosterSize * UnitTables.RosterSize + field;
+            var field = RosterField(offset);
+            return field < 0 ? null : roster + slot * UnitTables.RosterSize + field;
         }
         return null;
     }
 
     private string Describe(uint address) =>
         address - Units < UnitCount * UnitSize ? $"battle unit {(address - Units) / UnitSize} +0x{(address - Units) % UnitSize:X}"
-        : address - Roster < RosterSlots * RosterSize ? $"roster slot {(address - Roster) / RosterSize} +0x{(address - Roster) % RosterSize:X}"
+        : RosterSlot(address, out var offset) is >= 0 and var slot ? $"roster slot {slot} +0x{offset:X}"
         : "not mapped";
 
     public int Read(uint address, int length)
@@ -256,7 +279,7 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
         if (IsUnitName(address) || IsUnitName(address + (uint)length - 1))
             WriteUnitName((address - Units) / UnitSize);
         if (IsName(address) || IsName(address + (uint)length - 1))
-            WriteName((address - Roster) / RosterSize);
+            WriteName(RosterSlot(IsName(address) ? address : address + (uint)length - 1));
         if (GraphicWritten != null && address - Units < UnitCount * UnitSize
             && UnitGraphicAt - ((address - Units) % UnitSize) < (uint)length)
             GraphicWritten((address - Units) / UnitSize);
@@ -270,18 +293,18 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
         address - Units < UnitCount * UnitSize && (address - Units) % UnitSize - (uint)UnitNameAt < (uint)NameLength;
 
     private static bool IsName(uint address) =>
-        address - Roster < RosterSlots * RosterSize && (address - Roster) % RosterSize - (uint)NameAt < (uint)NameLength;
+        RosterSlot(address, out var offset) >= 0 && (uint)(offset - NameAt) < (uint)NameLength;
 
     /// <summary>A roster unit's or a battle unit's JP or total JP (<see cref="JpAt"/>, <see cref="UnitJpAt"/>).</summary>
     private static bool IsJp(uint address) =>
-        address - Roster < RosterSlots * RosterSize && (address - Roster) % RosterSize - (uint)JpAt < 4u * PsJobs
+        RosterSlot(address, out var offset) >= 0 && (uint)(offset - JpAt) < 4u * PsJobs
         || address - Units < UnitCount * UnitSize && (address - Units) % UnitSize - (uint)UnitJpAt < 4u * PsJobs;
 
     /// <summary>Noted once per unit field, roster field or other address.</summary>
     private void Missing(uint address, string what)
     {
         var key = address - Units < UnitCount * UnitSize ? 0x10000 | (address - Units) % UnitSize
-            : address - Roster < RosterSlots * RosterSize ? 0x20000 | (address - Roster) % RosterSize
+            : RosterSlot(address, out var offset) >= 0 ? 0x20000 | (uint)offset
             : address & ~0xFu;
         if (_missing.Add(key))
             note($"PS1 0x{address:X8} ({Describe(address)}) has no place in the remaster yet; {what}");
@@ -301,25 +324,28 @@ internal sealed unsafe class Ps1Memory(byte* units, byte* roster, Action<string>
         return 0;
     }
 
-    /// <summary>0xC3: the roster slot (of the PS1's 20) with that sprite set or name id; its PS1 address or 0.</summary>
+    /// <summary>0xC3: the roster slot with that sprite set or name id; its PS1 address (<see cref="RosterAddress"/>)
+    /// or 0. Every slot of the remaster's is looked at: a guest is in its last four, and a big party goes past the
+    /// PS1's 20.</summary>
     public uint FindRoster(int id)
     {
-        for (var k = 0; k < RosterSlots; k++)
+        for (var k = 0; k < UnitTables.RosterSlots; k++)
         {
             var slot = roster + k * UnitTables.RosterSize;
             if (slot[1] != 0xFF && (slot[0] == id || *(ushort*)(slot + 0x230) == id))
-                return Roster + (uint)k * RosterSize;
+                return RosterAddress(k);
         }
         return 0;
     }
 
     /// <summary>0xC7: whether the roster (<paramref name="flags"/> 0x80) has the character: by name id with bit 0, else
-    /// by sprite set. The PS1's second list (flag 0x40, 0x800579C8) isn't mapped.</summary>
+    /// by sprite set. Every slot of the remaster's is looked at, its guests' (50–53) among them, as the PS1's 20 hold
+    /// its guests. The PS1's second list (flag 0x40, 0x800579C8) isn't mapped.</summary>
     public bool HasCharacter(int flags, int id)
     {
         if ((flags & 0x80) != 0)
         {
-            for (var k = 0; k < RosterSlots; k++)
+            for (var k = 0; k < UnitTables.RosterSlots; k++)
             {
                 var slot = roster + k * UnitTables.RosterSize;
                 if (slot[1] != 0xFF && ((flags & 1) != 0 ? *(ushort*)(slot + 0x230) : slot[0]) == id)

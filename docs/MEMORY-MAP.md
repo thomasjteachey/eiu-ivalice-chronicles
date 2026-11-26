@@ -42,7 +42,15 @@ so writes there go to the mod's store instead.
 
 ## The roster
 
-PS1 0x80057F74, 20 slots of 0x100 bytes; the remaster's slots are 0x258 bytes and it has more of them.
+PS1 0x80057F74, 20 slots of 0x100 bytes; the remaster's slots are 0x258 bytes and it has 54 of them, its guests in
+the last four (50–53) where the PS1 keeps them in its 16–19.
+
+The PS1's 20 addresses are the remaster's slots 0–19. A slot past them has no PS1 address, so the upgrade gives it
+one where no PS1 code points, past the console's memory: slot k at **0x80E00000 + k × 0x100**, laid out as a PS1 slot
+(the table below). `WorldUnitAddress`, `RosterHasUnit` and `GenerateUnit`'s roster search look through all 54 slots,
+so a guest or the 30th member of a big party is found; `WorldUnitAddress` answers the PS1's own address for slots
+0–19 and the upgrade's for the rest, and `LoadAddress` and `SaveAddress` take either. An event that walks the roster
+by adding 0x100 from 0x80057F74 still sees the first 20 slots only.
 
 | PS1 offset | Remaster offset | What |
 |---|---|---|

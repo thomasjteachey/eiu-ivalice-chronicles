@@ -2,7 +2,7 @@
   "ModId": "fftivc.utility.eventinstructionupgrade",
   "ModName": "Event Instruction Upgrade",
   "ModAuthor": "Xifanie (the PS1 hack); eiu-ivalice-chronicles port (unofficial)",
-  "ModVersion": "1.0.1",
+  "ModVersion": "1.0.2",
   "ModDescription": "Xifanie's Event Instruction Upgrade for The Ivalice Chronicles (enhanced): event scripts with If and Switch, subroutines, 32-bit variables, the PS1's memory (LoadAddress, SaveAddress), AlterParameter, GenerateUnit and more. Runs only events marked for it; needed by mods whose events use it, such as Ivalice ReMixed. An unofficial port.",
   "ModDll": "EventInstructionUpgrade.dll",
   "ModIcon": "",

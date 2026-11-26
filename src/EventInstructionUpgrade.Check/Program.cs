@@ -341,6 +341,31 @@ internal static unsafe class SelfTest
         var unitJp = $"{*(ushort*)(unit3 + Ps1Memory.RemasterUnitJpAt + 6)} {*(ushort*)(unit3 + Ps1Memory.RemasterUnitTotalJpAt + 6)}";
         Check($"a battle unit's JP for job index 3 written as the PS1 has it (10040, then a total of 1234): {unitJp} in the "
               + $"remaster's, read back {named.Read(unitJpAt, 2)}", unitJp == "9999 1234" && named.Read(unitJpAt, 2) == 9999);
+        // The remaster's roster past the PS1's 20 slots: a guest in slot 50 (sprite set 0x1F, name id 0x1F, level 31)
+        // and a party member in slot 25 (sprite set 0x80, name id 0x145). Both are found, at addresses of the mod's
+        // own (RosterMore + slot x 0x100) that read and write the slot as a PS1 slot's do; slots 0-19 keep the PS1's.
+        var guest = roster + 50 * UnitTables.RosterSize;
+        guest[0] = 0x1F; guest[1] = 50; guest[Ps1Memory.RosterField(0x16)] = 31; *(ushort*)(guest + 0x230) = 0x1F;
+        var far = roster + 25 * UnitTables.RosterSize;
+        far[0] = 0x80; far[1] = 25; *(ushort*)(far + 0x230) = 0x145;
+        var guestAt = named.FindRoster(0x1F);
+        var farAt = named.FindRoster(0x145);
+        named.Write(guestAt + 0x17, 1, 71); // Brave
+        var has = $"{named.HasCharacter(0x80, 0x1F)} {named.HasCharacter(0x81, 0x145)} {named.HasCharacter(0x80, 0x2A)} "
+                  + $"{named.HasCharacter(0x40, 0x1F)}";
+        Check($"a guest in roster slot 50 and a member in slot 25: found at 0x{guestAt:X8} and 0x{farAt:X8} (slot "
+              + $"{Ps1Memory.RosterSlot(guestAt)}, {Ps1Memory.RosterSlot(farAt)}); the guest's level read {named.Read(guestAt + 0x16, 1)}, "
+              + $"name id 0x{named.Read(guestAt + 0xCE, 2):X}, Brave written {guest[Ps1Memory.RosterField(0x17)]}; in the roster "
+              + $"(the guest by sprite set, the member by name id, a sprite set no one has, the unmapped list alone): {has}; "
+              + $"slot 3 still at 0x{Ps1Memory.RosterAddress(3):X8}, slot 19 at 0x{Ps1Memory.RosterAddress(19):X8}, the address after "
+              + $"the PS1's 20 in no slot ({Ps1Memory.RosterSlot(Ps1Memory.Roster + 20 * Ps1Memory.RosterSize)})",
+              guestAt == Ps1Memory.RosterMore + 50 * Ps1Memory.RosterSize && farAt == Ps1Memory.RosterMore + 25 * Ps1Memory.RosterSize
+              && Ps1Memory.RosterSlot(guestAt) == 50 && Ps1Memory.RosterSlot(farAt) == 25
+              && named.Read(guestAt + 0x16, 1) == 31 && named.Read(guestAt + 0xCE, 2) == 0x1F
+              && guest[Ps1Memory.RosterField(0x17)] == 71 && has == "True True False False"
+              && Ps1Memory.RosterAddress(3) == Ps1Memory.Roster + 3 * Ps1Memory.RosterSize
+              && Ps1Memory.RosterAddress(19) == Ps1Memory.Roster + 19 * Ps1Memory.RosterSize
+              && Ps1Memory.RosterSlot(Ps1Memory.Roster + 20 * Ps1Memory.RosterSize) == -1);
         foreach (var p in new nint[] { (nint)cell, (nint)table, (nint)marked, (nint)other, (nint)code, (nint)units, (nint)roster })
             System.Runtime.InteropServices.NativeMemory.Free((void*)p);
         return failures;
@@ -410,6 +435,15 @@ internal static unsafe class SelfTest
               + $"0xB6 female 0x{CreateUnit.Graphic(0xB6, 0x40):X2}, 0x90 male 0x{CreateUnit.Graphic(0x90, 0x80):X2}",
               !found && CreateUnit.Graphic(0xB5, 0x40) == 0x83 && CreateUnit.Graphic(0xB6, 0x40) == 0x85
               && CreateUnit.Graphic(0x90, 0x80) == 0x60);
+        // The same search for sprite set 0x1F, which only a guest in the remaster's slot 50 has: found there, past the
+        // PS1's 20 slots, at the address the mod gives that slot.
+        var guestSlot = Ps1Memory.RosterAddress(50);
+        memory[guestSlot] = 0x1F;
+        memory[guestSlot + 4] = 0x80;
+        memory[guestSlot + 0x16] = 31;
+        var (guestFound, guestSource) = CreateUnit.Build(Convert.FromHexString("1F0000020000000000000000"), record, Read);
+        Check($"a roster search for a guest in slot 50: found {guestFound} at 0x{guestSource:X8}, sprite set 0x{record[0]:X2}, "
+              + $"level {record[3]}", guestFound && guestSource == guestSlot && record[0] == 0x1F && record[3] == 31);
         return failures;
     }
 }
